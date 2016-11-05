@@ -7,6 +7,13 @@
 # Arma3 Server (re)starter for TFU
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+Write-Host ""
+Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Write-Host "			 TaskForceUnicorn Arma3 Launcher by Ben"
+Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Write-Host ""
+Write-Host "Initializing..."
+
 $Script:IntervalShort = 1
 $Script:IntervalMedium = 3
 $Script:IntervalLong = 20
@@ -14,13 +21,6 @@ $Script:A3Run = $false
 $Script:BECRun = $false
 $Script:A3HLRun = @($null,$false,$false, $false)
 $Script:a3hlID = @($null,$null,$null,$null)
-
-Write-Host ""
-Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-Write-Host "			 TaskForceUnicorn Arma3 Launcher by Ben"
-Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-Write-Host ""
-Write-Host "Initializing..."
 
 # Parsing main config-file
 Get-Content "common.cfg" | foreach-object -begin {$h=@{}} -process { $k = [regex]::split($_,' = '); if(($k[0].CompareTo("") -ne 0) -and ($k[0].StartsWith("[") -ne $True)) { $h.Add($k[0], $k[1]) } }
@@ -42,12 +42,15 @@ $Script:cfg = $h.Get_Item("cfg")
 $Script:config = $h.Get_Item("config")
 $Script:param = $h.Get_Item("param")
 $Script:mods = $h.Get_Item("mods")
+$Script:cltMods = $h.Get_Item("cltMods")
 $Script:srvMods = $h.Get_Item("srvMods")
 $Script:headless = $h.Get_Item("headless")
 $Script:hlConnect = $h.Get_Item("hlconnect")
 $Script:usebec = $h.Get_Item("usebec")
 $Script:beconfig = $h.Get_Item("beconfig")
 $Script:becPid = "$pidPath\BEC_$pidFilename"
+$Script:extraKeys = "$profilePath\Users\$profileName\extrakeys"
+$Script:globalKeys = "$profilePath\globalkeys"
 
 if ( $headless -gt 0 ){
 	$Script:hlPid = @($null, "$pidPath\hl1_$pidFilename", "$pidPath\hl2_$pidFilename", "$pidPath\hl3_$pidFilename")
@@ -90,7 +93,55 @@ if ( !(Test-Path "$a3Path\$cfg") ){
 
 
 # Arma 3 server management functions
+Function removeKeys {
+	$keyFiles = get-childitem "$a3Path\keys" -include "*.bikey" -exclude "*a3.bikey"
+	foreach($keyFile in $keyFiles){ remove-item $keyFile }
+}
+Function importKeys($mods=$null){
+	if ( !($mods) ){
+		if (test-path $globalKeys -PathType container){
+			$keyFiles = get-childitem $globakKeys -include "*.bikey"
+			foreach($keyFile in $keyFiles){
+				$fname = $keyFile.Name
+				$dest = "$a3Path\keys\$fname"
+				Copy-Item $keyFile $dest
+			}
+		}
+		if (test-path $extraKeys -PathType container){
+			$keyFiles = get-childitem $extraKeys -include "*.bikey"
+			foreach($keyFile in $keyFiles){
+				$fname = $keyFile.Name
+				$dest = "$a3Path\keys\$fname"
+				Copy-Item $keyFile $dest
+			}
+		}
+	} else {
+		$option = [System.StringSplitOptions]::RemoveEmptyEntries
+		$modArray = $mods.Split(";", $option)
+		foreach($mod in $modArray){
+			if ( test-path "$modPath\$mod" ){
+				$keyFiles = get-childitem "$modPath\$mod" -include "*.bikey"
+				foreach($keyFile in $keyFiles){
+					$fname = $keyFile.Name
+					$dest = "$a3Path\keys\$fname"
+					Copy-Item $keyFile $dest
+				}
+			} else {
+				$a=(Get-Date).ToUniversalTime()
+				Write-Host "$a - $mod folder was not found in $modPath, key was not imported!"  -BackgroundColor "Red" -ForegroundColor "white"
+			}
+		}
+	}
+
+}
 Function start_A3 {
+	$a=(Get-Date).ToUniversalTime()
+	Write-Host "$a - Importing mods keys for $srvName"
+	#removeKeys
+	#importKeys
+	#importKeys $cltMods
+	#importKeys $srvMods
+	
 	$a=(Get-Date).ToUniversalTime()
 	Write-Host "$a - Starting: $srvName on port: $port"
 	
