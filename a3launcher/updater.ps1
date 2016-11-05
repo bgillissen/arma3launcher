@@ -7,8 +7,22 @@
 # Arma3 Server Updater for TFU
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-. "./mods.ps1"
-$Script:modList = getMods
+$Script:modList = ( #name, workshop id, pathname (used in server .cfg)
+					("CBA_A3", "450814997", "cba"),
+					("task_force_radio", "620019431", "tfar"),
+					("ace", "463939057", "ace"),
+					("ACE3 RHS compatibility files", "698224854", "acerhs"),
+					("ACEX", "708250744", "acex"),
+					("Advanced Rappelling", "713709341", "AR"),
+					("Advanced Urban Rappelling", "730310357", "AUR"),
+					("Advanced Sling Loading", "615007497", "ASL"),
+					("Advanced Towing", "639837898", "AT"),
+					("Static Line Jump", "727184590", "SLJ"),
+					("Cup core", "583496184", "cupCore"),
+					("Cup maps", "583544987", "cupMaps"),
+					("Kunduz, Afghanistan", "421620913", "kunduz"),
+					("Project OPFOR", "735566597", "projectOPFOR")
+				)
 				
 Write-Host ""
 Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -45,7 +59,7 @@ foreach($mod in $modList ){
 }
 $Script:cmdArgs = "+login $steamLogin +force_install_dir $a3Path $workshopItems +`"app_update 233780 -beta`" validate +quit"
 
-# Asking Steam if there is any updates to workshops items and to arma3 server
+#launching steamcmd
 #Start-Process -FilePath $steamExe  -NoNewWindow -Wait -ArgumentList $cmdArgs
 
 #creating symlinks, if needed

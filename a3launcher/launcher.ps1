@@ -44,9 +44,11 @@ $Script:param = $h.Get_Item("param")
 $Script:mods = $h.Get_Item("mods")
 $Script:cltMods = $h.Get_Item("cltMods")
 $Script:srvMods = $h.Get_Item("srvMods")
+$Script:cpKeys = ($h.Get_Item("cpkeys") -eq "true")
 $Script:headless = $h.Get_Item("headless")
 $Script:hlConnect = $h.Get_Item("hlconnect")
-$Script:usebec = $h.Get_Item("usebec")
+$Script:hlPassword = $h.Get_Item("hlpassword")
+$Script:usebec = ($h.Get_Item("usebec") -eq "true")
 $Script:beconfig = $h.Get_Item("beconfig")
 $Script:becPid = "$pidPath\BEC_$pidFilename"
 $Script:extraKeys = "$profilePath\Users\$profileName\extrakeys"
@@ -99,48 +101,39 @@ Function removeKeys {
 }
 Function importKeys($mods=$null){
 	if ( !($mods) ){
-		if (test-path $globalKeys -PathType container){
-			$keyFiles = get-childitem $globakKeys -include "*.bikey"
-			foreach($keyFile in $keyFiles){
-				$fname = $keyFile.Name
-				$dest = "$a3Path\keys\$fname"
-				Copy-Item $keyFile $dest
-			}
-		}
-		if (test-path $extraKeys -PathType container){
-			$keyFiles = get-childitem $extraKeys -include "*.bikey"
-			foreach($keyFile in $keyFiles){
-				$fname = $keyFile.Name
-				$dest = "$a3Path\keys\$fname"
-				Copy-Item $keyFile $dest
-			}
-		}
+		if (test-path $globalKeys -PathType container){ copyKeys $globalKeys }
+		if (test-path $extraKeys -PathType container){ copyKeys $extraKeys }
 	} else {
 		$option = [System.StringSplitOptions]::RemoveEmptyEntries
 		$modArray = $mods.Split(";", $option)
-		foreach($mod in $modArray){
-			if ( test-path "$modPath\$mod" ){
-				$keyFiles = get-childitem "$modPath\$mod" -include "*.bikey"
-				foreach($keyFile in $keyFiles){
-					$fname = $keyFile.Name
-					$dest = "$a3Path\keys\$fname"
-					Copy-Item $keyFile $dest
-				}
-			} else {
-				$a=(Get-Date).ToUniversalTime()
-				Write-Host "$a - $mod folder was not found in $modPath, key was not imported!"  -BackgroundColor "Red" -ForegroundColor "white"
-			}
-		}
+		foreach($mod in $modArray){ copyKeys "$modPath\$mod" }
 	}
-
+}
+Function copyKeys($from){
+	if ( !(test-path "$from" -PathType container) ){
+		$a=(Get-Date).ToUniversalTime()
+		Write-Host "$a - $from folder was not found!, key was not imported!"  -BackgroundColor "Red" -ForegroundColor "white"
+		return
+	}
+	$keyFiles = get-childitem "$from" -include "*.bikey"
+	foreach($keyFile in $keyFiles){
+		$fname = $keyFile.Name
+		$dest = "$a3Path\keys\$fname"
+		Copy-Item $keyFile $dest
+	}
 }
 Function start_A3 {
 	$a=(Get-Date).ToUniversalTime()
-	Write-Host "$a - Importing mods keys for $srvName"
+	Write-Host "$a - Removing keys"
 	#removeKeys
-	#importKeys
-	#importKeys $cltMods
-	#importKeys $srvMods
+	
+	if ( $cpKeys ){
+		$a=(Get-Date).ToUniversalTime()
+		Write-Host "$a - Importing keys for $srvName"
+		#importKeys
+		#importKeys $cltMods
+		#importKeys $srvMods
+	}
 	
 	$a=(Get-Date).ToUniversalTime()
 	Write-Host "$a - Starting: $srvName on port: $port"
@@ -244,7 +237,11 @@ function start_A3HL($key){
 	$a=(Get-Date).ToUniversalTime()
 	Write-Host "$a - Starting: $srvName headless client ($key)"
 	
-	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client -profiles=$profilePath -mod=$mods -connect $hlconnect" -WorkingDirectory $a3Path -passthru
+	$pass = ""
+	if ( $hlPassword ){
+		$pass = "-password=$hlPassword"
+	}
+	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client -profiles=$profilePath -mod=$mods -connect $hlconnect $pass" -WorkingDirectory $a3Path -passthru
 	Start-Sleep -s $IntervalMedium
 	
 	$a=(Get-Date).ToUniversalTime()
@@ -325,7 +322,7 @@ Do {
 		$a=(Get-Date).ToUniversalTime()
 		Write-Host "$a - $srvName is already running with PID: $($a3ID.id)"
 	}
-	if ( $usebec -eq "true" ){
+	if ( $usebec ){
 		# checking if BEC is running
 		IsBECRunning
 		if ($A3Run -and !$BECRun){
