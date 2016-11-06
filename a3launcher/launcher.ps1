@@ -21,6 +21,7 @@ $Script:A3Run = $false
 $Script:BECRun = $false
 $Script:A3HLRun = @($null,$false,$false, $false)
 $Script:a3hlID = @($null,$null,$null,$null)
+$Script:keyCount = 0
 
 # Parsing main config-file
 Get-Content "common.cfg" | foreach-object -begin {$h=@{}} -process { $k = [regex]::split($_,' = '); if(($k[0].CompareTo("") -ne 0) -and ($k[0].StartsWith("[") -ne $True)) { $h.Add($k[0], $k[1]) } }
@@ -28,6 +29,7 @@ $Script:pidPath = $h.Get_Item("pid")
 $Script:a3Path = $h.Get_Item("path")
 $script:a3Exe = "$a3Path\arma3server.exe"
 $Script:profilePath = $h.Get_Item("profile")
+$Script:modPath = $h.Get_Item("mods")
 $Script:becPath = $h.Get_Item("bec")
 $Script:becExe = "$becPath\Bec.exe"
 
@@ -96,8 +98,14 @@ if ( !(Test-Path "$a3Path\$cfg") ){
 
 # Arma 3 server management functions
 Function removeKeys {
-	$keyFiles = get-childitem "$a3Path\keys" -include "*.bikey" -exclude "*a3.bikey"
-	foreach($keyFile in $keyFiles){ remove-item $keyFile }
+	$keyFiles = get-childitem -LiteralPath "$a3Path\keys" -recurse | Where-Object { $_.Name -match ".bikey$" -and $_.Name -notLike "a3.bikey" }
+	if ( ($keyFiles | Measure-Object).count -gt 0 ){
+		foreach($keyFile in $keyFiles){
+			$fname = $keyFile.fullName
+			remove-item -LiteralPath $keyFile.fullName
+		}
+	}
+	$Script:keyCount = 0
 }
 Function importKeys($mods=$null){
 	if ( !($mods) ){
@@ -112,34 +120,46 @@ Function importKeys($mods=$null){
 Function copyKeys($from){
 	if ( !(test-path "$from" -PathType container) ){
 		$a=(Get-Date).ToUniversalTime()
-		Write-Host "$a - $from folder was not found!, key was not imported!"  -BackgroundColor "Red" -ForegroundColor "white"
+		Write-Host "$a - $from folder was not found, no keys were imported!"  -BackgroundColor "Red" -ForegroundColor "white"
 		return
 	}
-	$keyFiles = get-childitem "$from" -include "*.bikey"
-	foreach($keyFile in $keyFiles){
-		$fname = $keyFile.Name
-		$dest = "$a3Path\keys\$fname"
-		Copy-Item $keyFile $dest
+	$keyFiles = get-childitem -LiteralPath $from -recurse | Where-Object { $_.Name -match ".bikey$" }
+	$count += ($keyFiles | Measure-Object).count
+	if (  $count -gt 0 ){
+		foreach($keyFile in $keyFiles){
+			$fname = $keyFile.Name
+			$dest = "$a3Path\keys\$fname"
+			Copy-Item -literalPath $keyFile.fullName -Destination $dest 
+		}
 	}
+	$Script:keyCount += $count
 }
 Function start_A3 {
 	$a=(Get-Date).ToUniversalTime()
 	Write-Host "$a - Removing keys"
-	#removeKeys
+	removeKeys
 	
 	if ( $cpKeys ){
+		importKeys $null
+		importKeys $cltMods
+		importKeys $srvMods
 		$a=(Get-Date).ToUniversalTime()
-		Write-Host "$a - Importing keys for $srvName"
-		#importKeys
-		#importKeys $cltMods
-		#importKeys $srvMods
+		Write-Host "$a - $keyCount keys imported for $srvName"
 	}
+	
+	#adding modPath to needed mods
+	$option = [System.StringSplitOptions]::RemoveEmptyEntries
+	$modArray = $cltMods.Split(";", $option)
+	$cltStr = ""
+	foreach($mod in $modArray){ $cltStr += "$modPath\$mod;" }
+	$modArray = $srvMods.Split(";", $option)
+	$srvStr = ""
+	foreach($mod in $modArray){ $srvStr += "$modPath\$mod;" }
 	
 	$a=(Get-Date).ToUniversalTime()
 	Write-Host "$a - Starting: $srvName on port: $port"
 	
-	$Script:a3ID = Start-Process arma3server.exe "$param -port=$port -profiles=$profilePath -name=$profileName -config=$config -cfg=$cfg -mod=$mods -servermod=$srvMods" -WorkingDirectory $a3Path -passthru
-	Start-Sleep -s $IntervalMedium
+	$Script:a3ID = Start-Process arma3server.exe "$param -port=$port -profiles=$profilePath -name=$profileName -config=$config -cfg=$cfg -mod=$cltStr -servermod=$srvStr" -WorkingDirectory $a3Path -passthru
 	
 	$a=(Get-Date).ToUniversalTime()
 	if ( !$a3ID ){
@@ -241,8 +261,13 @@ function start_A3HL($key){
 	if ( $hlPassword ){
 		$pass = "-password=$hlPassword"
 	}
-	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client -profiles=$profilePath -mod=$mods -connect $hlconnect $pass" -WorkingDirectory $a3Path -passthru
-	Start-Sleep -s $IntervalMedium
+	#adding modPath to needed mods
+	$option = [System.StringSplitOptions]::RemoveEmptyEntries
+	$modArray = $cltMods.Split(";", $option)
+	$cltStr = ""
+	foreach($mod in $modArray){ $cltStr += "$modPath\$mod;" }
+	
+	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client -profiles=$profilePath -mod=$cltStr -connect $hlconnect $pass" -WorkingDirectory $a3Path -passthru
 	
 	$a=(Get-Date).ToUniversalTime()
 	if ( !$a3hlID[$key] ){
@@ -302,8 +327,7 @@ Do {
 	IsA3Running
 	if (!$A3Run){
 		$a=(Get-Date).ToUniversalTime()
-		Write-Host "$a - $srvName is not running: starting ..." -BackgroundColor "Red" -ForegroundColor "white"
-		Start-Sleep -s $IntervalMedium
+		Write-Host "$a - $srvName is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 		if ( $usebec -eq "true" ){
 			kill_BEC
 			Start-Sleep -s $IntervalMedium
@@ -313,6 +337,7 @@ Do {
 		start_A3
 		$a=(Get-Date).ToUniversalTime()
 		Write-Host "$a - Waiting for server to init..."
+		Start-Sleep -s $IntervalLong
 		Start-Sleep -s $IntervalLong
 		Start-Sleep -s $IntervalLong
 		Start-Sleep -s $IntervalLong
@@ -327,7 +352,7 @@ Do {
 		IsBECRunning
 		if ($A3Run -and !$BECRun){
 			$a=(Get-Date).ToUniversalTime()
-			Write-Host "$a - $srvName BEC is not running: starting ... " -BackgroundColor "Red" -ForegroundColor "white"
+			Write-Host "$a - $srvName BEC is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 			kill_BEC
 			Start-Sleep -s $IntervalMedium
 			start_BEC
@@ -343,7 +368,7 @@ Do {
 				isA3HLRunning $i
 				if (!$A3HLRun[$i]){
 					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - $srvName headless client ($i) is not running: starting ... " -BackgroundColor "Red" -ForegroundColor "white"
+					Write-Host "$a - $srvName headless client ($i) is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 					kill_A3HL $i
 					Start-Sleep -s $IntervalMedium
 					start_A3HL $i

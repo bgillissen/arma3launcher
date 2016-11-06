@@ -13,13 +13,14 @@ $Script:modList = ( #name, workshop id, pathname (used in server .cfg)
 					("ace", "463939057", "ace"),
 					("ACE3 RHS compatibility files", "698224854", "acerhs"),
 					("ACEX", "708250744", "acex"),
+					("Arma Enhanced Movement", "333310405", "AEM"),
 					("Advanced Rappelling", "713709341", "AR"),
 					("Advanced Urban Rappelling", "730310357", "AUR"),
 					("Advanced Sling Loading", "615007497", "ASL"),
 					("Advanced Towing", "639837898", "AT"),
 					("Static Line Jump", "727184590", "SLJ"),
-					("Cup core", "583496184", "cupCore"),
-					("Cup maps", "583544987", "cupMaps"),
+					("Cup Terrains - Core", "583496184", "cupCore"),
+					("Cup Terrains - Maps", "583544987", "cupMaps"),
 					("Kunduz, Afghanistan", "421620913", "kunduz"),
 					("Project OPFOR", "735566597", "projectOPFOR")
 				)
@@ -60,7 +61,7 @@ foreach($mod in $modList ){
 $Script:cmdArgs = "+login $steamLogin +force_install_dir $a3Path $workshopItems +`"app_update 233780 -beta`" validate +quit"
 
 #launching steamcmd
-#Start-Process -FilePath $steamExe  -NoNewWindow -Wait -ArgumentList $cmdArgs
+Start-Process -FilePath $steamExe  -NoNewWindow -Wait -ArgumentList $cmdArgs
 
 #creating symlinks, if needed
 foreach($mod in $modList ){
