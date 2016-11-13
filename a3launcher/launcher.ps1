@@ -47,16 +47,17 @@ $Script:mods = $h.Get_Item("mods")
 $Script:cltMods = $h.Get_Item("cltMods")
 $Script:srvMods = $h.Get_Item("srvMods")
 $Script:cpKeys = ($h.Get_Item("cpkeys") -eq "true")
-$Script:headless = $h.Get_Item("headless")
+$Script:hlCount = $h.Get_Item("hlcount")
 $Script:hlConnect = $h.Get_Item("hlconnect")
 $Script:hlPassword = $h.Get_Item("hlpassword")
+$Script:hlParam = $h.Get_Item("hlparam")
 $Script:usebec = ($h.Get_Item("usebec") -eq "true")
 $Script:beconfig = $h.Get_Item("beconfig")
 $Script:becPid = "$pidPath\BEC_$pidFilename"
 $Script:extraKeys = "$profilePath\Users\$profileName\extrakeys"
 $Script:globalKeys = "$profilePath\globalkeys"
 
-if ( $headless -gt 0 ){
+if ( $hlCount -gt 0 ){
 	$Script:hlPid = @($null, "$pidPath\hl1_$pidFilename", "$pidPath\hl2_$pidFilename", "$pidPath\hl3_$pidFilename")
 }
 
@@ -267,7 +268,7 @@ function start_A3HL($key){
 	$cltStr = ""
 	foreach($mod in $modArray){ $cltStr += "$modPath\$mod;" }
 	
-	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client -profiles=$profilePath -mod=$cltStr -connect $hlconnect $pass" -WorkingDirectory $a3Path -passthru
+	$Script:a3hlID[$key] = Start-Process arma3server.exe "-client $hlParam -profiles=$profilePath -mod=$cltStr -connect $hlconnect $pass" -WorkingDirectory $a3Path -passthru
 	
 	$a=(Get-Date).ToUniversalTime()
 	if ( !$a3hlID[$key] ){
@@ -319,6 +320,8 @@ if ( $usebec -eq "true" ){
 }
 Write-Host "$headless headless client(s) will be launched."
 Write-Host "Entering the loop..."
+
+
 # Main loop
 $Script:loop = 0;
 $Script:firstLoop = $true;
@@ -361,10 +364,10 @@ Do {
 			Write-Host "$a - $srvName BEC is already running with PID: $($becID.id)"
 		}
 	}
-	if ( $headless -gt 0 -and $A3Run){
+	if ( $hlCount -gt 0 -and $A3Run){
 		#checking if Arma headless clients are running
 		for($i=1; $i -le 3; $i++){
-			if ( $i -le $headless ){
+			if ( $i -le $hlCount ){
 				isA3HLRunning $i
 				if (!$A3HLRun[$i]){
 					$a=(Get-Date).ToUniversalTime()
