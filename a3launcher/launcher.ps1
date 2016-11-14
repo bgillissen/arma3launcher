@@ -372,7 +372,7 @@ Do {
 					$a=(Get-Date).ToUniversalTime()
 					Write-Host "$a - $srvName headless client ($i) is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 					kill_A3HL $i
-					Start-Sleep -s $IntervalMedium
+					Start-Sleep -s $killWait
 					start_A3HL $i
 					$a=(Get-Date).ToUniversalTime()
 					Write-Host "$a - Waiting $($hlWait)s for headless client to init..."
