@@ -15,9 +15,11 @@ Write-Host ""
 Write-Host "Initializing..."
 
 $Script:srvWait = 90
-$Script:hlWait = 120
+$Script:hlWait = 30
 $Script:loopWait = 5
 $Script:killWait = 10
+$script:crashWait = 5
+$Script:crashTry = 5
 $Script:A3Run = $false
 $Script:BECRun = $false
 $Script:A3HLRun = @($null,$false,$false, $false)
@@ -98,7 +100,32 @@ if ( !(Test-Path "$a3Path\$cfg") ){
 }
 
 Function isRunning($exe, $procID){
-	return Get-Process $exe -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $procID } | Where-Object {$_.Responding -eq $true}
+	$procObj = Get-Process $exe -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $procID }
+	if ( !$procObj ){ 
+		return $false 
+	}
+	if ( $procObj.Responding ){ 
+		return $procObj 
+	}
+	for($i=1;$i -le $crashTry; $i++){
+		$a=(Get-Date).ToUniversalTime()
+		Write-Host "$a - Process $procID is not responding (attempt $i / 5), waiting $($crashWait)s..."  -BackgroundColor "Red" -ForegroundColor "white"
+		Start-Sleep -s $crashWait
+		$procObj = Get-Process $exe -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $procID }
+		if ( !$procObj ){
+			$a=(Get-Date).ToUniversalTime()
+			Write-Host "$a - Process $procID does exists anymore, marked as dead"  -BackgroundColor "Red" -ForegroundColor "white"
+			return $false 
+		}
+		if ( $procObj.Responding ){
+			$a=(Get-Date).ToUniversalTime()
+			Write-Host "$a - Process $procID has responded"
+			return $procObj
+		}
+	}
+	$a=(Get-Date).ToUniversalTime()
+	Write-Host "$a - Process $($procObj.Id) is not responding after 5 attempts, considered dead"  -BackgroundColor "Red" -ForegroundColor "white"
+	return $false
 }
 
 # Arma 3 server management functions
@@ -309,12 +336,6 @@ function isA3HLRunning($key){
 		}
 	}
 }
-function killall_A3HL {
-	if ( $headless -gt 0 ){
-		for($i=1; $i -le 3; $i++){ kill_A3HL $i }
-	}
-}
-
 
 if ( $usebec -eq "true" ){
 	Write-Host "BEC is enabled."
@@ -339,8 +360,10 @@ Do {
 			Start-Sleep -s $killWait
 		}
 		if ( $hlCount -gt 0 ){
-			killall_A3HL
-			Start-Sleep -s $killWait
+			for($i=1; $i -le $hlCount; $i++){ 
+				kill_A3HL $i 
+				Start-Sleep -s $killWait
+			}
 		}
 		start_A3
 		$a=(Get-Date).ToUniversalTime()
@@ -368,24 +391,22 @@ Do {
 	}
 	if ( $hlCount -gt 0 -and $A3Run){
 		#checking if Arma headless clients are running
-		for($i=1; $i -le 3; $i++){
-			if ( $i -le $hlCount ){
-				isA3HLRunning $i
-				if (!$A3HLRun[$i]){
-					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - $srvName headless client ($i) is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
-					kill_A3HL $i
-					Start-Sleep -s $killWait
-					start_A3HL $i
-					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - Waiting $($hlWait)s for headless client to init..."
-					Start-Sleep -s $hlWait
-					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - Done."
-				} elseif ( $firstLoop ){
-					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - $srvName headless client ($i) is already running with PID: $($a3hlID[$i].id)"
-				}
+		for($i=1; $i -le $hlCount; $i++){
+			isA3HLRunning $i
+			if (!$A3HLRun[$i]){
+				$a=(Get-Date).ToUniversalTime()
+				Write-Host "$a - $srvName headless client ($i) is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
+				kill_A3HL $i
+				Start-Sleep -s $killWait
+				start_A3HL $i
+				$a=(Get-Date).ToUniversalTime()
+				Write-Host "$a - Waiting $($hlWait)s for headless client to init..."
+				Start-Sleep -s $hlWait
+				$a=(Get-Date).ToUniversalTime()
+				Write-Host "$a - Done."
+			} elseif ( $firstLoop ){
+				$a=(Get-Date).ToUniversalTime()
+				Write-Host "$a - $srvName headless client ($i) is already running with PID: $($a3hlID[$i].id)"
 			}
 		}
 	}
