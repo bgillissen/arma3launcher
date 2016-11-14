@@ -66,37 +66,34 @@ if ( $hlCount -gt 0 ){
 
 $host.ui.RawUI.WindowTitle = "TFU Launcher: $srvName"
 
+Function initFailed($msg){
+	$a=(Get-Date).ToUniversalTime()
+	Write-Host "$a - $($msg), exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
+	Read-Host 'Press enter to exit'
+	exit
+}
 
 #Prerun checks
-$a=(Get-Date).ToUniversalTime()
 if ( !(Test-Path $a3Path -PathType container) ){
-	Write-Host "$a - Invalid value in common.cfg, path setting : $a3Path is not a folder!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in common.cfg, path setting : $a3Path is not a folder!"
 } elseif ( !(Test-Path $a3Exe) ){
-	Write-Host "$a - Invalid value in common.cfg, path setting: $a3Exe was not found!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in common.cfg, path setting: $a3Exe was not found!"
 } elseif ( !(Test-Path $pidPath -PathType container) ){
-	Write-Host "$a - Invalid value in common.cfg, pid setting: $pidPath is not a folder !, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in common.cfg, pid setting: $pidPath is not a folder!"
 } elseif ( !(Test-Path $profilePath -PathType container) ){
-	Write-Host "$a - Invalid value in common.cfg, profile setting: $profilePath is not a folder!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in common.cfg, profile setting: $profilePath is not a folder!"
 }
 if ( $usebec -eq "true" ){
 	if ( !(Test-Path $becPath -PathType container) ){
-		Write-Host "$a - Invalid value in common.cfg, bec setting : $becPath is not a folder!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-		exit
+		initFailed "Invalid value in common.cfg, bec setting : $becPath is not a folder!"
 	} elseif ( !(Test-Path $a3Exe) ){
-		Write-Host "$a - Invalid value in common.cfg, bec setting: $becExe was not found!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-		exit
+		initFailed "Invalid value in common.cfg, bec setting: $becExe was not found!"
 	}
 }
 if ( !(Test-Path "$a3Path\$cfg") ){
-	Write-Host "$a - Invalid value in $args, cfg setting: $a3Path\$cfg was not found!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in $args, cfg setting: $a3Path\$cfg was not found!"
 } elseif ( !(Test-Path "$a3Path\$config") ){
-	Write-Host "$a - Invalid value in $args, config setting: $a3Path\$config was not found!, exiting..."  -BackgroundColor "Red" -ForegroundColor "white"
-	exit
+	initFailed "Invalid value in $args, config setting: $a3Path\$config was not found!"
 }
 
 # Check that a given process exists and is responding
@@ -180,7 +177,6 @@ Function start_A3 {
 		Write-Host "$a - $keyCount keys imported for $srvName"
 	}
 	
-	#adding modPath to needed mods
 	$option = [System.StringSplitOptions]::RemoveEmptyEntries
 	$modArray = $cltMods.Split(";", $option)
 	$cltStr = ""
@@ -410,14 +406,6 @@ Do {
 			}
 		}
 	}
-	
-	#$loop = $loop + 1;
-	#if ( $loop -eq 3 ){
-	#	$a=(Get-Date).ToUniversalTime()
-	#	Write-Host "$a - Heartbeat."
-	#	$loop = 0;
-	#}
-	
 	$Script:firstLoop = $false;
 	Start-Sleep -s $loopWait
 	
