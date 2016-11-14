@@ -397,7 +397,7 @@ Do {
 	}
 	
 	$loop = $loop + 1;
-	if ( $loop -eq 2 ){
+	if ( $loop -eq 3 ){
 		$a=(Get-Date).ToUniversalTime()
 		Write-Host "$a - Heartbeat."
 		$loop = 0;
