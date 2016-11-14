@@ -15,7 +15,7 @@ Write-Host ""
 Write-Host "Initializing..."
 
 $Script:srvWait = 90
-$Script:hlWait = 30
+$Script:hlWait = 90
 $Script:loopWait = 5
 $Script:killWait = 10
 $script:crashWait = 5
@@ -99,6 +99,7 @@ if ( !(Test-Path "$a3Path\$cfg") ){
 	exit
 }
 
+# Check that a given process exists and is responding
 Function isRunning($exe, $procID){
 	$procObj = Get-Process $exe -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $procID }
 	if ( !$procObj ){ 
@@ -124,7 +125,7 @@ Function isRunning($exe, $procID){
 		}
 	}
 	$a=(Get-Date).ToUniversalTime()
-	Write-Host "$a - Process $($procObj.Id) is not responding after 5 attempts, considered dead"  -BackgroundColor "Red" -ForegroundColor "white"
+	Write-Host "$a - Process $procID is not responding after 5 attempts, considered dead"  -BackgroundColor "Red" -ForegroundColor "white"
 	return $false
 }
 
@@ -209,8 +210,7 @@ function kill_A3 {
 		pid = $($a3ID.Id)
 		Stop-Process $pid
 		$a=(Get-Date).ToUniversalTime()
-		$b = "$a  -  $srvName with PID: $pid has been killed"
-		Write-Host "$b"
+		Write-Host "$a  -  $srvName with PID: $pid has been killed"
 		Set-Content $pidFile ""
 	}
 }
