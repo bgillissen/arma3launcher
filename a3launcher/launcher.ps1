@@ -14,9 +14,10 @@ Write-Host -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Write-Host ""
 Write-Host "Initializing..."
 
-$Script:IntervalShort = 1
-$Script:IntervalMedium = 3
-$Script:IntervalLong = 20
+$Script:srvWait = 60
+$Script:hlWait = 60
+$Script:loopWait = 5
+$Script:killWait = 10
 $Script:A3Run = $false
 $Script:BECRun = $false
 $Script:A3HLRun = @($null,$false,$false, $false)
@@ -211,7 +212,6 @@ Function start_BEC {
 	Write-Host "$b"
 	
 	$Script:becID = Start-Process $becExe "-f $beconfig --dsc" -WorkingDirectory $becPath -passthru
-	Start-Sleep -s $IntervalMedium
 	
 	$a=(Get-Date).ToUniversalTime()
 	if ( !$becID ){
@@ -318,7 +318,7 @@ if ( $usebec -eq "true" ){
 } else {
 	Write-Host "BEC is disabled."
 }
-Write-Host "$headless headless client(s) will be launched."
+Write-Host "$hlCount headless client(s) will be launched."
 Write-Host "Entering the loop..."
 
 
@@ -333,17 +333,16 @@ Do {
 		Write-Host "$a - $srvName is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 		if ( $usebec -eq "true" ){
 			kill_BEC
-			Start-Sleep -s $IntervalMedium
+			Start-Sleep -s $killWait
 		}
-		killall_A3HL
-		Start-Sleep -s $IntervalMedium
+		if ( $hlCount -gt 0 ){
+			killall_A3HL
+			Start-Sleep -s $killWait
+		}
 		start_A3
 		$a=(Get-Date).ToUniversalTime()
-		Write-Host "$a - Waiting for server to init..."
-		Start-Sleep -s $IntervalLong
-		Start-Sleep -s $IntervalLong
-		Start-Sleep -s $IntervalLong
-		Start-Sleep -s $IntervalLong
+		Write-Host "$a - Waiting $($srvWait)s for server to init..."
+		Start-Sleep -s $srvWait
 		$a=(Get-Date).ToUniversalTime()
 		Write-Host "$a - Done."
 	} elseif ( $firstLoop ){
@@ -357,7 +356,7 @@ Do {
 			$a=(Get-Date).ToUniversalTime()
 			Write-Host "$a - $srvName BEC is not running, starting..." -BackgroundColor "Red" -ForegroundColor "white"
 			kill_BEC
-			Start-Sleep -s $IntervalMedium
+			Start-Sleep -s $killWait
 			start_BEC
 		} elseif ( $firstLoop ){
 			$a=(Get-Date).ToUniversalTime()
@@ -376,9 +375,8 @@ Do {
 					Start-Sleep -s $IntervalMedium
 					start_A3HL $i
 					$a=(Get-Date).ToUniversalTime()
-					Write-Host "$a - Waiting for headless client to init..."
-					Start-Sleep -s $IntervalLong
-					Start-Sleep -s $IntervalLong
+					Write-Host "$a - Waiting $($hlWait)s for headless client to init..."
+					Start-Sleep -s $hlWait
 					$a=(Get-Date).ToUniversalTime()
 					Write-Host "$a - Done."
 				} elseif ( $firstLoop ){
@@ -396,6 +394,6 @@ Do {
 		$loop = 0;
 	}
 	$Script:firstLoop = $false;
-	Start-Sleep -s $IntervalLong
+	Start-Sleep -s $loopWait
 	
 } While ($true)
