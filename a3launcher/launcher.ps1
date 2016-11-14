@@ -115,7 +115,7 @@ Function isRunning($exe, $procID){
 		$procObj = Get-Process $exe -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $procID }
 		if ( !$procObj ){
 			$a=(Get-Date).ToUniversalTime()
-			Write-Host "$a - Process $procID does exists anymore, marked as dead"  -BackgroundColor "Red" -ForegroundColor "white"
+			Write-Host "$a - Process $procID does not exists anymore, marked as dead"  -BackgroundColor "Red" -ForegroundColor "white"
 			return $false 
 		}
 		if ( $procObj.Responding ){
@@ -411,12 +411,13 @@ Do {
 		}
 	}
 	
-	$loop = $loop + 1;
-	if ( $loop -eq 3 ){
-		$a=(Get-Date).ToUniversalTime()
-		Write-Host "$a - Heartbeat."
-		$loop = 0;
-	}
+	#$loop = $loop + 1;
+	#if ( $loop -eq 3 ){
+	#	$a=(Get-Date).ToUniversalTime()
+	#	Write-Host "$a - Heartbeat."
+	#	$loop = 0;
+	#}
+	
 	$Script:firstLoop = $false;
 	Start-Sleep -s $loopWait
 	

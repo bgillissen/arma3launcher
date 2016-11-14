@@ -6,6 +6,15 @@
 #
 # Arma3 Server Updater for TFU
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If ( -NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ){   
+	#"No Administrative rights, it will display a popup window asking user for Admin rights"
+	$arguments = "& '" + $myinvocation.mycommand.definition + "'"
+	Start-Process "$psHome\powershell.exe" -Verb runAs -ArgumentList $arguments
+	exit
+}
+
+$scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+set-Location $scriptDir
 
 $Script:modList = ( #name, workshop id, pathname (used in server .cfg)
 					("CBA_A3", "450814997", "cba"),
