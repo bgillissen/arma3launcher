@@ -194,14 +194,12 @@ function isA3Running {
 			$storedPID = Get-Content $pidFile
 		}
 		if ( $storedPID ){
-			#$Script:a3ID = Get-Process arma3server -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $storedPID } | Where-Object {$_.Responding -eq $true}
 			$Script:a3ID = isRunning "arma3server" $storedPID
 			if ( $a3ID ){
 				$Script:a3Run = $true
 			}
 		}
 	} else {
-		#$Script:a3ID = Get-Process arma3server -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $($a3ID.Id) } | Where-Object {$_.Responding -eq $true}
 		$Script:a3ID = isRunning "arma3server" $a3ID.Id
 		if ( $a3ID ){
 			$Script:a3Run = $true
@@ -243,14 +241,12 @@ function isBECRunning {
 			$storedPID = Get-Content $becPid
 		}
 		if ( $storedPID ){
-			#$Script:becID = Get-Process Bec -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $storedPID } | Where-Object {$_.Responding -eq $true}
 			$Script:becID = isRunning "Bec" $StoredPID
 			if ( $becID ){
 				$Script:becRun = $true
 			}
 		}
 	} else {
-		#$Script:becID = Get-Process Bec -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $($becID.Id) } | Where-Object {$_.Responding -eq $true}
 		$Script:becID = isRunning "Bec" $becID.Id
 		if ( $becID ){
 			$Script:becRun = $true
@@ -301,14 +297,12 @@ function isA3HLRunning($key){
 			$storedPID = Get-Content $hlPid[$key]
 		}
 		if ( $storedPID ){
-			#$Script:a3hlID[$key] = Get-Process arma3server -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $storedPID } | Where-Object {$_.Responding -eq $true}
 			$Script:a3hlID[$key] = isRunning "arma3server" $storedPID
 			if ( $a3hlID[$key] ){
 				$Script:A3HLRun[$key] = $true;
 			}
 		}
 	} else {
-		#$Script:a3hlID[$key] = Get-Process arma3server -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $($a3hlID[$key].Id) } | Where-Object {$_.Responding -eq $true}
 		$Script:a3hlID[$key] = isRunning "arma3server" $a3hlID[$key].Id
 		if ( $a3hlID[$key] ){
 			$Script:A3HLRun[$key] = $true;
