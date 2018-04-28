@@ -74,7 +74,7 @@ $hlCount = $h.Get_Item("hlcount")
 $hlConnect = $h.Get_Item("hlconnect")
 $hlCMD = $h.Get_Item("hlCMD")
 $hlProfiles =  $h.Get_Item("hlProfiles").Split(";", $splitOption)
-$hlMemMax = $h.Get_Item("hlMemMax")
+$hlMemMax = [scriptblock]::Create($h.Get_Item("hlMemMax")).Invoke()
 $usebec = ($h.Get_Item("usebec") -eq "true")
 $beconfig = $h.Get_Item("beconfig")
 $becPid = "$pidPath\BEC_$pidFilename"
@@ -431,13 +431,20 @@ function isA3HLRunning($key){
 }
 function getMemory_A3HL($key){
 	if ( !$a3hlID[$key] ){
+		Write-Host "from PIDFile"
 		if ( Test-Path $hlPid[$key] ){ $storedPID = Get-Content $hlPid[$key] }
 		if ( $storedPID ){
-			$script:A3HLMem[$key] = (Get-Process -Id $storedPID)[0].WorkingSet
-		}
+			$procObj = Get-Process $a3Proc -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $storedPID}
+		}		
 	} else {
-		$script:A3HLMem[$key] = (Get-Process -Id ($a3hlID[$key].Id))[0].WorkingSet
+		Write-Host "from PIDVar"
+		$procObj = Get-Process $a3Proc -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $a3hlID[$key].Id}
 	}
+	if ( !$procObj ){ 
+		$script:A3HLMem[$key] = -1
+		return 
+	}
+	$script:A3HLMem[$key] = $procObj.WorkingSet64
 }
 
 if ( !$startServer ){ 
@@ -451,7 +458,7 @@ if ( !$startServer ){
 }
 Write-Host "$hlCount headless client(s) will be launched."
 Write-Host "Entering the loop..."
-
+Write-Host "Max HC Memory:  $hlMemMax"
 # Main loop
 $firstLoop = $true;
 Do {
@@ -519,7 +526,8 @@ Do {
 				Write-Host "$a - $fullName headless client ($i) is already running with PID: $($a3hlID[$i].id)"
 			} else {
 				getMemory_A3HL $i
-				if ($A3HLMem[$i] -gt $hlMemMax){ #if the memory is above the allowed amount
+				Write-Host "Current : $($A3HLMem[$i]), Max :  $hlMemMax"
+				if ($A3HLMem[$i] -gt "$hlMemMax"){ #if the memory is above the allowed amount
 				    $a=(Get-Date).ToUniversalTime()
 				    Write-Host "$a - $fullName headless client ($i) is above allowed memory usage, killing it..." -BackgroundColor "Red" -ForegroundColor "white"
 				    kill_A3HL $i
