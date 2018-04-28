@@ -431,13 +431,11 @@ function isA3HLRunning($key){
 }
 function getMemory_A3HL($key){
 	if ( !$a3hlID[$key] ){
-		Write-Host "from PIDFile"
 		if ( Test-Path $hlPid[$key] ){ $storedPID = Get-Content $hlPid[$key] }
 		if ( $storedPID ){
 			$procObj = Get-Process $a3Proc -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $storedPID}
 		}		
 	} else {
-		Write-Host "from PIDVar"
 		$procObj = Get-Process $a3Proc -ErrorAction SilentlyContinue | Where-Object {$_.Id -eq $a3hlID[$key].Id}
 	}
 	if ( !$procObj ){ 
@@ -458,7 +456,7 @@ if ( !$startServer ){
 }
 Write-Host "$hlCount headless client(s) will be launched."
 Write-Host "Entering the loop..."
-Write-Host "Max HC Memory:  $hlMemMax"
+
 # Main loop
 $firstLoop = $true;
 Do {
@@ -526,7 +524,6 @@ Do {
 				Write-Host "$a - $fullName headless client ($i) is already running with PID: $($a3hlID[$i].id)"
 			} else {
 				getMemory_A3HL $i
-				Write-Host "Current : $($A3HLMem[$i]), Max :  $hlMemMax"
 				if ($A3HLMem[$i] -gt "$hlMemMax"){ #if the memory is above the allowed amount
 				    $a=(Get-Date).ToUniversalTime()
 				    Write-Host "$a - $fullName headless client ($i) is above allowed memory usage, killing it..." -BackgroundColor "Red" -ForegroundColor "white"
